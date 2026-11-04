@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Air Monitor</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+<!-- ══════════════════════════ HEADER ══════════════════════════════════ -->
+<header>
+  <div class="header-inner">
+    <a class="brand" href="#" onclick="navigate('dashboard')">
+      <div class="brand-icon"><i class="fa-solid fa-leaf"></i></div>
+      <div class="brand-text">
+        <h1>Urban Air Monitor</h1>
+        <p>Air Quality Prediction &amp; Monitoring</p>
+      </div>
+    </a>
+    <nav id="main-nav">
+      <a href="#" class="active" data-section="dashboard"   onclick="navigate('dashboard')">  <i class="fa-solid fa-gauge-high"></i>   <span>Overview</span></a>
+      <a href="#" data-section="record"     onclick="navigate('record')">     <i class="fa-solid fa-plus-circle"></i>  <span>Record</span></a>
+      <a href="#" data-section="data"       onclick="navigate('data')">       <i class="fa-solid fa-table"></i>         <span>Data</span></a>
+      <a href="#" data-section="prediction" onclick="navigate('prediction')"> <i class="fa-solid fa-brain"></i>         <span>Prediction</span></a>
+      <a href="#" data-section="alerts"     onclick="navigate('alerts')">     <i class="fa-solid fa-bell"></i>          <span>Alerts <span id="nav-alert-badge" style="display:none;background:#b91c1c;color:#fff;border-radius:10px;padding:0 5px;font-size:.7rem;margin-left:3px"></span></span></a>
+    </nav>
+  </div>
+</header>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ══════════════════════════ MAIN ════════════════════════════════════ -->
+<main>
+
+  <!-- ── DASHBOARD ─────────────────────────────────────────────────── -->
+  <section id="section-dashboard" class="active">
+    <div class="page-title">
+      <h2><i class="fa-solid fa-wind" style="color:var(--green)"></i> Urban Air Quality Dashboard</h2>
+      <p>Monitor key air pollutants across city locations to support informed environmental action.</p>
+    </div>
+
+    <div class="cards-grid" id="stats-cards">
+      <div class="card"><div class="card-icon green"><i class="fa-solid fa-location-dot"></i></div><div class="card-body"><div class="label">Monitoring Locations</div><div class="value" id="stat-locations">–</div></div></div>
+      <div class="card"><div class="card-icon blue"><i class="fa-solid fa-droplet"></i></div><div class="card-body"><div class="label">Avg PM2.5 µg/m³</div><div class="value" id="stat-pm25">–</div></div></div>
+      <div class="card"><div class="card-icon black"><i class="fa-solid fa-cloud"></i></div><div class="card-body"><div class="label">Avg PM10 µg/m³</div><div class="value" id="stat-pm10">–</div></div></div>
+      <div class="card"><div class="card-icon yellow"><i class="fa-solid fa-circle-half-stroke"></i></div><div class="card-body"><div class="label">Current AQ Status</div><div class="value" id="stat-status">–</div></div></div>
+      <div class="card"><div class="card-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="card-body"><div class="label">Active Alerts</div><div class="value" id="stat-alerts">–</div></div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <h2><i class="fa-solid fa-chart-line"></i> Pollutant Trends</h2>
+          <div class="period-tabs">
+            <button class="active" onclick="setChartPeriod('daily',this)">Daily</button>
+            <button onclick="setChartPeriod('weekly',this)">Weekly</button>
+            <button onclick="setChartPeriod('monthly',this)">Monthly</button>
+          </div>
+        </div>
+        <div class="chart-wrap"><canvas id="pollutant-chart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><h2><i class="fa-solid fa-chart-pie"></i> Status Distribution</h2></div>
+        <div class="chart-wrap" style="height:260px"><canvas id="status-chart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2><i class="fa-solid fa-clock-rotate-left"></i> Recent Readings</h2>
+        <button class="btn btn-sm btn-secondary" onclick="navigate('data')">View All</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>City</th><th>Location</th><th>Date</th><th>PM2.5</th><th>PM10</th><th>CO2</th><th>NO2</th><th>Status</th></tr></thead>
+          <tbody id="recent-tbody"><tr><td colspan="8" class="loading"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── RECORD READING ─────────────────────────────────────────────── -->
+  <section id="section-record">
+    <div class="page-title">
+      <h2><i class="fa-solid fa-plus-circle" style="color:var(--green)"></i> Record Air Quality Reading</h2>
+      <p>Submit a new pollutant measurement. Required fields are marked *.</p>
+    </div>
+
+    <div class="dash-grid">
+      <div class="panel">
+        <div class="panel-header"><h2><i class="fa-solid fa-pen-to-square"></i> New Reading</h2></div>
+        <div class="panel-body">
+          <form id="reading-form" onsubmit="submitReading(event)" novalidate>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>City *</label>
+                <input type="text" id="f-city" placeholder="e.g. Mumbai" />
+                <span class="field-error" id="err-city"></span>
+              </div>
+              <div class="form-group">
+                <label>Location Name</label>
+                <input type="text" id="f-location" placeholder="e.g. Andheri East" />
+              </div>
+              <div class="form-group">
+                <label>Monitoring Date *</label>
+                <input type="date" id="f-date" />
+                <span class="field-error" id="err-date"></span>
+              </div>
+              <div class="form-group">
+                <label>PM2.5 (µg/m³) * <small style="color:var(--gray-400)">(0–1000)</small></label>
+                <input type="number" id="f-pm25" placeholder="e.g. 35.5" min="0" max="1000" step="0.1" oninput="livePreview()" />
+                <span class="field-error" id="err-pm25"></span>
+              </div>
+              <div class="form-group">
+                <label>PM10 (µg/m³) * <small style="color:var(--gray-400)">(0–1000)</small></label>
+                <input type="number" id="f-pm10" placeholder="e.g. 80" min="0" max="1000" step="0.1" oninput="livePreview()" />
+                <span class="field-error" id="err-pm10"></span>
+              </div>
+              <div class="form-group">
+                <label>CO2 (ppm) * <small style="color:var(--gray-400)">(300–5000)</small></label>
+                <input type="number" id="f-co2" placeholder="e.g. 450" min="300" max="5000" step="1" oninput="livePreview()" />
+                <span class="field-error" id="err-co2"></span>
+              </div>
+              <div class="form-group">
+                <label>NO2 (ppb) * <small style="color:var(--gray-400)">(0–1000)</small></label>
+                <input type="number" id="f-no2" placeholder="e.g. 40" min="0" max="1000" step="0.1" oninput="livePreview()" />
+                <span class="field-error" id="err-no2"></span>
+              </div>
+              <div class="form-group">
+                <label>Temperature (°C)</label>
+                <input type="number" id="f-temp" placeholder="e.g. 28" min="-20" max="60" step="0.1" />
+              </div>
+              <div class="form-group">
+                <label>Humidity (%)</label>
+                <input type="number" id="f-humidity" placeholder="e.g. 65" min="0" max="100" step="0.1" />
+              </div>
+            </div>
+            <div id="aq-preview" style="display:none;margin-top:1rem;padding:.75rem 1rem;border-radius:var(--radius);background:var(--green-light)">
+              <small style="color:var(--gray-400)">Estimated status:</small> <span id="preview-badge"></span>
+            </div>
+            <div style="display:flex;gap:.5rem;margin-top:1.25rem">
+              <button type="submit" class="btn btn-primary" id="reading-submit-btn"><i class="fa-solid fa-floppy-disk"></i> Save Reading</button>
+              <button type="button" class="btn btn-secondary" onclick="resetReadingForm()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" style="margin-bottom:1rem">
+          <div class="panel-header"><h2><i class="fa-solid fa-circle-info"></i> Threshold Reference</h2></div>
+          <div class="panel-body" style="padding:.5rem 0">
+            <table>
+              <thead><tr><th>Pollutant</th><th style="color:#065f46">Good</th><th style="color:#92400e">Moderate</th><th style="color:#9a3412">Poor</th><th style="color:#991b1b">Very Poor</th></tr></thead>
+              <tbody>
+                <tr><td>PM2.5 µg/m³</td><td>≤12</td><td>≤35</td><td>≤55</td><td>&gt;55</td></tr>
+                <tr><td>PM10 µg/m³</td><td>≤54</td><td>≤154</td><td>≤254</td><td>&gt;254</td></tr>
+                <tr><td>CO2 ppm</td><td>≤400</td><td>≤800</td><td>≤1000</td><td>&gt;1000</td></tr>
+                <tr><td>NO2 ppb</td><td>≤53</td><td>≤100</td><td>≤200</td><td>&gt;200</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><h2><i class="fa-solid fa-history"></i> Recent Submissions</h2></div>
+          <div class="table-wrapper" style="max-height:300px;overflow-y:auto">
+            <table>
+              <thead><tr><th>City</th><th>Date</th><th>PM2.5</th><th>Status</th></tr></thead>
+              <tbody id="record-recent-tbody"><tr><td colspan="4" class="loading"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── AIR QUALITY DATA ───────────────────────────────────────────── -->
+  <section id="section-data">
+    <div class="page-title">
+      <h2><i class="fa-solid fa-table" style="color:var(--green)"></i> Air Quality Data</h2>
+      <p>Browse, search, filter and export all monitoring records.</p>
+    </div>
+    <div class="panel">
+      <div class="panel-header">
+        <h2><i class="fa-solid fa-filter"></i> Filters</h2>
+        <button class="btn btn-sm btn-secondary" onclick="exportCsv()"><i class="fa-solid fa-download"></i> Export CSV</button>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="data-search" placeholder="Search city or location…" oninput="applyDataFilters()" />
+        <input type="date" id="data-from" onchange="applyDataFilters()" />
+        <input type="date" id="data-to"   onchange="applyDataFilters()" />
+        <select id="data-status" onchange="applyDataFilters()">
+          <option value="">All Statuses</option>
+          <option>Good</option><option>Moderate</option><option>Poor</option><option>Very Poor</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" onclick="clearDataFilters()"><i class="fa-solid fa-xmark"></i> Clear</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>#</th><th>City</th><th>Location</th><th>Date</th><th>PM2.5</th><th>PM10</th><th>CO2</th><th>NO2</th><th>Temp</th><th>Humidity</th><th>AQI</th><th>Status</th></tr></thead>
+          <tbody id="data-tbody"><tr><td colspan="12" class="loading"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.25rem;border-top:1px solid var(--gray-100)">
+        <span id="data-info" style="font-size:.8rem;color:var(--gray-400)"></span>
+        <div id="data-pagination" style="display:flex;gap:.25rem"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PREDICTION ─────────────────────────────────────────────────── -->
+  <section id="section-prediction">
+    <div class="page-title">
+      <h2><i class="fa-solid fa-brain" style="color:var(--green)"></i> ML Air Quality Prediction</h2>
+      <p>Enter pollutant values to get a machine learning prediction with confidence and feature importance.</p>
+    </div>
+
+    <div id="model-banner" class="panel" style="margin-bottom:1rem">
+      <div class="panel-body" id="model-banner-body" style="padding:.75rem 1.25rem">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div>
+        <div class="panel">
+          <div class="panel-header"><h2><i class="fa-solid fa-sliders"></i> Enter Values</h2></div>
+          <div class="panel-body">
+            <form id="predict-form" onsubmit="submitPrediction(event)" novalidate>
+              <div class="form-grid">
+                <div class="form-group"><label>PM2.5 (µg/m³) *</label><input type="number" id="p-pm25" placeholder="0–500" min="0" max="500" step="0.1" required /></div>
+                <div class="form-group"><label>PM10 (µg/m³) *</label><input type="number" id="p-pm10" placeholder="0–500" min="0" max="500" step="0.1" required /></div>
+                <div class="form-group"><label>CO2 (ppm) *</label><input type="number" id="p-co2" placeholder="300–5000" min="300" max="5000" step="1" required /></div>
+                <div class="form-group"><label>NO2 (ppb) *</label><input type="number" id="p-no2" placeholder="0–600" min="0" max="600" step="0.1" required /></div>
+                <div class="form-group"><label>Temperature (°C)</label><input type="number" id="p-temp" value="25" min="-20" max="60" step="0.1" /></div>
+                <div class="form-group"><label>Humidity (%)</label><input type="number" id="p-humidity" value="60" min="0" max="100" step="0.1" /></div>
+              </div>
+              <div style="margin-top:.75rem">
+                <small style="color:var(--gray-400)">Quick presets:</small>
+                <div style="display:flex;gap:.4rem;margin-top:.4rem;flex-wrap:wrap">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="setPreset('good')">🌿 Good</button>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="setPreset('moderate')">🌤 Moderate</button>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="setPreset('poor')">🌫 Poor</button>
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="setPreset('very-poor')">🔴 Very Poor</button>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary" style="margin-top:1.25rem;width:100%" id="pred-btn">
+                <i class="fa-solid fa-bolt"></i> Predict Air Quality
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="panel" style="margin-top:1rem">
+          <div class="panel-header"><h2><i class="fa-solid fa-clock-rotate-left"></i> History</h2></div>
+          <div class="table-wrapper" style="max-height:220px;overflow-y:auto">
+            <table>
+              <thead><tr><th>Time</th><th>PM2.5</th><th>PM10</th><th>Result</th><th>Conf</th></tr></thead>
+              <tbody id="pred-history-tbody"><tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div id="pred-result-col">
+        <div class="panel" id="pred-placeholder">
+          <div class="empty-state"><i class="fa-solid fa-brain"></i><p>Enter values and click Predict.</p></div>
+        </div>
+        <div id="pred-result-content" style="display:none">
+          <div class="panel" style="margin-bottom:1rem">
+            <div class="panel-body">
+              <div class="pred-result" id="pred-result-box">
+                <div class="pred-icon" id="pred-icon">🌿</div>
+                <div style="flex:1">
+                  <div style="font-size:.8rem;color:var(--gray-400)">Predicted Air Quality</div>
+                  <h3 id="pred-label">–</h3>
+                  <div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem">
+                    <span style="font-size:.8rem;color:var(--gray-400)">Confidence</span>
+                    <div class="confidence-bar" style="flex:1"><div class="confidence-fill" id="conf-fill"></div></div>
+                    <span id="conf-pct" style="font-weight:700;font-size:.85rem"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dash-grid">
+            <div class="panel">
+              <div class="panel-header"><h2><i class="fa-solid fa-chart-bar"></i> Class Probabilities</h2></div>
+              <div class="panel-body" id="prob-body"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-header"><h2><i class="fa-solid fa-list-ol"></i> Feature Importance</h2></div>
+              <div class="panel-body" id="fi-body"></div>
+            </div>
+          </div>
+          <div class="panel" style="margin-top:1rem">
+            <div class="panel-header"><h2><i class="fa-solid fa-trophy"></i> Model Comparison</h2></div>
+            <div class="panel-body"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem" id="model-compare"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ALERTS ─────────────────────────────────────────────────────── -->
+  <section id="section-alerts">
+    <div class="page-title">
+      <h2><i class="fa-solid fa-bell" style="color:var(--green)"></i> Pollution Alerts</h2>
+      <p>Locations where pollutant levels exceed safe thresholds. Color-coded by severity.</p>
+    </div>
+
+    <div class="cards-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="card"><div class="card-icon green"><i class="fa-solid fa-check-circle"></i></div><div class="card-body"><div class="label">Good</div><div class="value" id="a-good">–</div></div></div>
+      <div class="card"><div class="card-icon yellow"><i class="fa-solid fa-exclamation-circle"></i></div><div class="card-body"><div class="label">Moderate</div><div class="value" id="a-moderate">–</div></div></div>
+      <div class="card"><div class="card-icon red" style="background:#ffedd5;color:#ea580c"><i class="fa-solid fa-triangle-exclamation"></i></div><div class="card-body"><div class="label">Poor</div><div class="value" id="a-poor">–</div></div></div>
+      <div class="card"><div class="card-icon red"><i class="fa-solid fa-circle-xmark"></i></div><div class="card-body"><div class="label">Very Poor</div><div class="value" id="a-verypoor">–</div></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2><i class="fa-solid fa-filter"></i> Filter Alerts</h2>
+        <button class="btn btn-sm btn-danger" onclick="resolveAll()"><i class="fa-solid fa-check-double"></i> Resolve All</button>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="alert-city-filter" placeholder="Filter by city…" oninput="loadAlerts()" />
+        <select id="alert-severity-filter" onchange="loadAlerts()">
+          <option value="">All Severities</option>
+          <option>Moderate</option><option>Poor</option><option>Very Poor</option>
+        </select>
+        <select id="alert-resolved-filter" onchange="loadAlerts()">
+          <option value="false">Active</option>
+          <option value="true">Resolved</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" onclick="clearAlertFilters()"><i class="fa-solid fa-xmark"></i> Clear</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:.5rem;margin-bottom:.75rem;font-size:.82rem;flex-wrap:wrap">
+      <span><span class="dot dot-good"></span> Good</span>
+      <span><span class="dot dot-moderate"></span> Moderate</span>
+      <span><span class="dot dot-poor"></span> Poor</span>
+      <span><span class="dot dot-very-poor"></span> Very Poor</span>
+    </div>
+
+    <div id="alerts-list"><div class="loading"><div class="spinner"></div></div></div>
+  </section>
+
+</main>
+
+<footer>
+  <strong>Urban Air Monitor</strong> — Air Quality Prediction &amp; Monitoring &nbsp;|&nbsp; Academic Project &nbsp;|&nbsp; Built with Kotlin + Spring Boot + Vanilla JS + Python ML
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
